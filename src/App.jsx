@@ -1,8 +1,8 @@
 import React, { useState, useReducer, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Search, Plus, Star, Clock, Flame, BookOpen, Calendar, ShoppingCart, FolderOpen,
-  Settings, Home, ChevronRight, Trash2, Edit3, Copy, Share2, Printer, X, Check,
-  Heart, ChevronDown, Filter, LayoutGrid, List, Sun, Moon, UtensilsCrossed
+  Settings, Home, Trash2, Edit3, Copy, Share2, Printer, X, Check,
+  Heart, ChevronDown, Filter, LayoutGrid, List, UtensilsCrossed
 } from 'lucide-react';
 
 // ============ SAMPLE DATA ============
@@ -393,20 +393,19 @@ function collectionReducer(state, action) {
 // ============ TOAST ============
 function ToastSystem({ toasts, removeToast }) {
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 no-print" aria-live="polite">
+    <div className="fixed bottom-24 md:bottom-28 right-4 md:right-6 z-[100] flex flex-col gap-2 no-print" aria-live="polite">
       {toasts.map(t => (
         <div
           key={t.id}
           role="alert"
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg animate-slide-up max-w-sm ${
-            t.type === 'error' ? 'bg-red-100 text-red-900 dark:bg-red-900/90 dark:text-red-100' :
-            t.type === 'info' ? 'bg-blue-100 text-blue-900 dark:bg-blue-900/90 dark:text-blue-100' :
-            'bg-sage/20 text-espresso dark:bg-sage/30 dark:text-cream'
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl border border-card shadow-dock animate-slide-up max-w-sm ${
+            t.type === 'error' ? 'bg-card text-red-300 border-red-500/40' :
+            t.type === 'info' ? 'bg-card text-blue-300 border-blue-500/40' :
+            'bg-card text-primary border-gold/40'
           }`}
-          style={{ borderLeft: `4px solid ${t.type === 'error' ? '#dc2626' : t.type === 'info' ? '#2563eb' : '#6B8F71'}` }}
         >
           <span className="flex-1">{t.message}</span>
-          <button type="button" onClick={() => removeToast(t.id)} className="p-1 rounded hover:opacity-80" aria-label="Dismiss">
+          <button type="button" onClick={() => removeToast(t.id)} className="p-1 rounded text-secondary hover:text-primary" aria-label="Dismiss">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -415,83 +414,61 @@ function ToastSystem({ toasts, removeToast }) {
   );
 }
 
-// ============ SIDEBAR ============
-function Sidebar({ currentView, setView, collapsed, setCollapsed, isDark }) {
-  const nav = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'recipes', label: 'Recipes', icon: BookOpen },
-    { id: 'mealplanner', label: 'Meal Planner', icon: Calendar },
-    { id: 'grocery', label: 'Grocery List', icon: ShoppingCart },
-    { id: 'collections', label: 'Collections', icon: FolderOpen },
-    { id: 'settings', label: 'Settings', icon: Settings },
-  ];
-  return (
-    <aside
-      className={`no-print hidden md:flex flex-col bg-cream dark:bg-espresso border-r border-espresso/10 dark:border-cream/10 transition-all duration-300 ${
-        collapsed ? 'w-16' : 'w-56'
-      }`}
-      style={{ minHeight: '100vh' }}
-    >
-      <div className="p-4 flex items-center justify-between border-b border-espresso/10 dark:border-cream/10">
-        {!collapsed && (
-          <span className="font-display font-bold text-lg text-espresso dark:text-cream">RMS</span>
-        )}
-        <button
-          type="button"
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-2 rounded-lg hover:bg-espresso/5 dark:hover:bg-cream/5"
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <ChevronRight className={`w-5 h-5 text-espresso dark:text-cream transition-transform ${collapsed ? '' : 'rotate-180'}`} />
-        </button>
-      </div>
-      <nav className="flex-1 p-2" aria-label="Main navigation">
-        {nav.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setView(id)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-              currentView === id
-                ? 'bg-saffron/20 text-saffron dark:bg-saffron/30'
-                : 'text-espresso dark:text-cream hover:bg-espresso/5 dark:hover:bg-cream/5'
-            }`}
-          >
-            <Icon className="w-5 h-5 shrink-0" />
-            {!collapsed && <span>{label}</span>}
-          </button>
-        ))}
-      </nav>
-    </aside>
-  );
-}
+// ============ DOCK (macOS-style) ============
+const DOCK_ITEMS = [
+  { id: 'dashboard', label: 'Home', icon: Home },
+  { id: 'recipes', label: 'Recipes', icon: BookOpen },
+  { id: 'mealplanner', label: 'Meal Planner', icon: Calendar },
+  { id: 'grocery', label: 'Grocery', icon: ShoppingCart },
+  { id: 'collections', label: 'Collections', icon: FolderOpen },
+  { id: 'settings', label: 'Settings', icon: Settings },
+];
 
-// ============ BOTTOM NAV (MOBILE) ============
-function BottomNav({ currentView, setView }) {
-  const nav = [
-    { id: 'dashboard', icon: Home },
-    { id: 'recipes', icon: BookOpen },
-    { id: 'mealplanner', icon: Calendar },
-    { id: 'grocery', icon: ShoppingCart },
-    { id: 'collections', icon: FolderOpen },
-    { id: 'settings', icon: Settings },
-  ];
+function Dock({ currentView, setView }) {
   return (
     <nav
-      className="md:hidden no-print fixed bottom-0 left-0 right-0 flex justify-around py-2 bg-cream dark:bg-espresso border-t border-espresso/10 dark:border-cream/10 z-50"
-      aria-label="Mobile navigation"
+      className="no-print fixed bottom-0 left-0 right-0 z-50 md:bottom-0 md:left-1/2 md:right-auto md:w-auto md:-translate-x-1/2 md:pb-6"
+      aria-label="Main navigation"
     >
-      {nav.map(({ id, icon: Icon }) => (
-        <button
-          key={id}
-          type="button"
-          onClick={() => setView(id)}
-          className={`p-3 rounded-full ${currentView === id ? 'bg-saffron/20 text-saffron' : 'text-espresso dark:text-cream'}`}
-          aria-current={currentView === id ? 'page' : undefined}
-        >
-          <Icon className="w-6 h-6" />
-        </button>
-      ))}
+      <div
+        className="flex items-center justify-around md:justify-center md:gap-2 md:px-6 md:py-3 md:rounded-[2.5rem] border border-dock md:shadow-dock md:mx-auto md:max-w-max md:border-t-0 border-t border-dock transition-all duration-300"
+        style={{
+          background: 'rgba(10,10,10,0.88)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          minHeight: '64px',
+        }}
+      >
+        {DOCK_ITEMS.map(({ id, label, icon: Icon }) => {
+          const isActive = currentView === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setView(id)}
+              className="group flex flex-col items-center justify-center flex-1 md:flex-none min-w-0 md:min-w-[64px] py-2 md:py-2.5 transition-all duration-300 ease-out md:hover:-translate-y-1"
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={label}
+            >
+              <span className="relative flex flex-col items-center">
+                <span
+                  className={`flex items-center justify-center w-9 h-9 md:w-11 md:h-11 rounded-xl transition-all duration-300 ease-out md:group-hover:-translate-y-1 md:group-hover:drop-shadow-[0_0_12px_rgba(201,168,76,0.35)] ${
+                    isActive ? 'scale-[1.15] text-gold md:drop-shadow-[0_0_12px_rgba(201,168,76,0.4)]' : 'text-secondary md:group-hover:text-primary'
+                  }`}
+                >
+                  <Icon className="w-5 h-5 md:w-6 md:h-6" strokeWidth={1.5} />
+                </span>
+                {isActive && (
+                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-gold shadow-[0_0_8px_rgba(201,168,76,0.8)]" />
+                )}
+              </span>
+              <span className="hidden md:block text-[10px] font-medium mt-1.5 text-secondary group-hover:text-primary transition-colors" style={{ fontSize: '10px' }}>
+                {label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }
@@ -511,7 +488,7 @@ function RecipeCard({ recipe, onSelect, onEdit, onDuplicate, onDelete, onToggleF
   const isList = viewMode === 'list';
   return (
     <article
-      className={`group relative bg-white dark:bg-espresso/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-espresso/5 dark:border-cream/5 ${
+      className={`group relative bg-card rounded-xl overflow-hidden border border-card hover:border-card-hover hover:shadow-card-hover transition-all duration-300 ${
         isList ? 'flex gap-4 p-4' : ''
       }`}
     >
@@ -526,7 +503,7 @@ function RecipeCard({ recipe, onSelect, onEdit, onDuplicate, onDelete, onToggleF
             alt=""
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-espresso/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
           <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2 text-white text-sm">
             <Clock className="w-4 h-4" />
             <span>{recipe.prepTime + recipe.cookTime} min</span>
@@ -537,21 +514,21 @@ function RecipeCard({ recipe, onSelect, onEdit, onDuplicate, onDelete, onToggleF
               </>
             )}
           </div>
-          <button
+            <button
             type="button"
             onClick={e => { e.stopPropagation(); onToggleFavorite(recipe.id); }}
-            className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 dark:bg-espresso/90"
+            className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 backdrop-blur border border-white/10"
             aria-label={recipe.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
           >
-            <Heart className={`w-4 h-4 ${recipe.is_favorite ? 'fill-terracotta text-terracotta' : 'text-gray-400'}`} />
+            <Heart className={`w-4 h-4 ${recipe.is_favorite ? 'fill-gold text-gold' : 'text-secondary'}`} />
           </button>
         </div>
         <div className={`p-4 ${isList ? 'flex-1 min-w-0' : ''}`}>
-          <h3 className="font-display font-semibold text-espresso dark:text-cream truncate">{recipe.title}</h3>
-          <p className="text-sm text-espresso/70 dark:text-cream/70 mt-1 line-clamp-2">{recipe.description}</p>
+          <h3 className="font-display font-semibold text-primary truncate">{recipe.title}</h3>
+          <p className="text-sm text-secondary mt-1 line-clamp-2">{recipe.description}</p>
           <div className="flex flex-wrap gap-1 mt-2">
-            <span className="text-xs px-2 py-0.5 rounded-full bg-sage/20 text-sage dark:bg-sage/40">{recipe.category}</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-terracotta/20 text-terracotta dark:bg-terracotta/40">{recipe.cuisine}</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30">{recipe.category}</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-secondary border border-white/10">{recipe.cuisine}</span>
           </div>
         </div>
       </button>
@@ -559,26 +536,26 @@ function RecipeCard({ recipe, onSelect, onEdit, onDuplicate, onDelete, onToggleF
         <button
           type="button"
           onClick={() => setMenuOpen(!menuOpen)}
-          className="p-2 rounded-lg hover:bg-espresso/5 dark:hover:bg-cream/5"
+          className="p-2 rounded-lg text-secondary hover:text-primary hover:bg-white/5"
           aria-label="Recipe options"
           aria-expanded={menuOpen}
         >
-          <ChevronDown className="w-5 h-5 text-espresso dark:text-cream" />
+          <ChevronDown className="w-5 h-5" />
         </button>
         {menuOpen && (
-          <div className="absolute right-0 mt-1 py-1 w-48 bg-white dark:bg-espresso rounded-lg shadow-lg border border-espresso/10 dark:border-cream/10 z-10 animate-fade-in">
-            <button type="button" onClick={() => { onEdit(recipe); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-espresso/5 dark:hover:bg-cream/5">
+          <div className="absolute right-0 mt-1 py-1 w-48 bg-card rounded-xl shadow-dock border border-card z-10 animate-fade-in">
+            <button type="button" onClick={() => { onEdit(recipe); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-left text-primary hover:bg-white/5 rounded-lg">
               <Edit3 className="w-4 h-4" /> Edit
             </button>
-            <button type="button" onClick={() => { onDuplicate(recipe); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-espresso/5 dark:hover:bg-cream/5">
+            <button type="button" onClick={() => { onDuplicate(recipe); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-left text-primary hover:bg-white/5 rounded-lg">
               <Copy className="w-4 h-4" /> Duplicate
             </button>
             {inCollection && onRemoveFromCollection && (
-              <button type="button" onClick={() => { onRemoveFromCollection(recipe.id); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-espresso/5 dark:hover:bg-cream/5">
+              <button type="button" onClick={() => { onRemoveFromCollection(recipe.id); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-left text-primary hover:bg-white/5 rounded-lg">
                 <X className="w-4 h-4" /> Remove from collection
               </button>
             )}
-            <button type="button" onClick={() => { onDelete(recipe.id); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+            <button type="button" onClick={() => { onDelete(recipe.id); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-left text-red-400 hover:bg-red-500/10 rounded-lg">
               <Trash2 className="w-4 h-4" /> Delete
             </button>
           </div>
@@ -604,9 +581,9 @@ function RecipeGrid({ recipes, viewMode, onSelect, onEdit, onDuplicate, onDelete
   if (recipes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-        <UtensilsCrossed className="w-16 h-16 text-espresso/30 dark:text-cream/30 mb-4" />
-        <h3 className="font-display text-xl text-espresso dark:text-cream">No recipes match</h3>
-        <p className="text-espresso/70 dark:text-cream/70 mt-2 max-w-sm">Try adjusting your search or filters.</p>
+        <UtensilsCrossed className="w-16 h-16 text-muted mb-4" />
+        <h3 className="font-display text-xl text-primary">No recipes match</h3>
+        <p className="text-secondary mt-2 max-w-sm">Try adjusting your search or filters.</p>
       </div>
     );
   }
@@ -697,15 +674,15 @@ function RecipeForm({ recipe, onSave, onClose, categories, cuisines }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-espresso/50 dark:bg-cream/20" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="recipe-form-title">
-      <div className="bg-cream dark:bg-espresso rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-slide-up" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b border-espresso/10 dark:border-cream/10">
-          <h2 id="recipe-form-title" className="font-display text-xl text-espresso dark:text-cream">{recipe ? 'Edit Recipe' : 'New Recipe'}</h2>
-          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-espresso/5 dark:hover:bg-cream/5" aria-label="Close"><X className="w-5 h-5" /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="recipe-form-title">
+      <div className="bg-card rounded-2xl border border-card shadow-dock max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-slide-up" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-card">
+          <h2 id="recipe-form-title" className="font-display text-xl text-primary">{recipe ? 'Edit Recipe' : 'New Recipe'}</h2>
+          <button type="button" onClick={onClose} className="p-2 rounded-lg text-secondary hover:text-primary hover:bg-white/5" aria-label="Close"><X className="w-5 h-5" /></button>
         </div>
-        <div className="flex border-b border-espresso/10 dark:border-cream/10">
+        <div className="flex border-b border-card">
           {stepsConfig.map((s, i) => (
-            <button key={i} type="button" onClick={() => setStep(i)} className={`px-4 py-2 text-sm ${step === i ? 'border-b-2 border-saffron text-saffron' : 'text-espresso/60 dark:text-cream/60'}`}>
+            <button key={i} type="button" onClick={() => setStep(i)} className={`px-4 py-2 text-sm transition-colors ${step === i ? 'border-b-2 border-gold text-gold' : 'text-muted hover:text-secondary'}`}>
               {s.title}
             </button>
           ))}
@@ -714,57 +691,57 @@ function RecipeForm({ recipe, onSave, onClose, categories, cuisines }) {
           {step === 0 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-espresso dark:text-cream mb-1">Title *</label>
-                <input type="text" value={form.title} onChange={e => update('title', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" placeholder="Recipe name" />
-                {errors.title && <p className="text-red-600 text-sm mt-1">{errors.title}</p>}
+                <label className="block text-sm font-medium text-primary mb-1">Title *</label>
+                <input type="text" value={form.title} onChange={e => update('title', e.target.value)} className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary placeholder:text-muted focus:border-gold/50 focus:shadow-input-focus" placeholder="Recipe name" />
+                {errors.title && <p className="text-red-400 text-sm mt-1">{errors.title}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-espresso dark:text-cream mb-1">Description</label>
-                <textarea value={form.description} onChange={e => update('description', e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" placeholder="Brief description" />
+                <label className="block text-sm font-medium text-primary mb-1">Description</label>
+                <textarea value={form.description} onChange={e => update('description', e.target.value)} rows={3} className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary placeholder:text-muted focus:border-gold/50 focus:shadow-input-focus" placeholder="Brief description" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-espresso dark:text-cream mb-1">Image URL</label>
-                <input type="url" value={form.imageUrl} onChange={e => update('imageUrl', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" placeholder="https://..." />
+                <label className="block text-sm font-medium text-primary mb-1">Image URL</label>
+                <input type="url" value={form.imageUrl} onChange={e => update('imageUrl', e.target.value)} className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary placeholder:text-muted focus:border-gold/50 focus:shadow-input-focus" placeholder="https://..." />
               </div>
             </div>
           )}
           {step === 1 && (
             <div className="space-y-4 grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-espresso dark:text-cream mb-1">Category</label>
-                <select value={form.category} onChange={e => update('category', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream">
+                <label className="block text-sm font-medium text-primary mb-1">Category</label>
+                <select value={form.category} onChange={e => update('category', e.target.value)} className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary">
                   {categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-espresso dark:text-cream mb-1">Cuisine</label>
-                <select value={form.cuisine} onChange={e => update('cuisine', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream">
+                <label className="block text-sm font-medium text-primary mb-1">Cuisine</label>
+                <select value={form.cuisine} onChange={e => update('cuisine', e.target.value)} className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary">
                   <option value="">—</option>
                   {cuisines.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-espresso dark:text-cream mb-1">Difficulty</label>
-                <select value={form.difficulty} onChange={e => update('difficulty', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream">
+                <label className="block text-sm font-medium text-primary mb-1">Difficulty</label>
+                <select value={form.difficulty} onChange={e => update('difficulty', e.target.value)} className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary">
                   {['Easy', 'Medium', 'Hard'].map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
               <div className="col-span-2 grid grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-espresso dark:text-cream mb-1">Prep (min)</label>
-                  <input type="number" min={0} value={form.prepTime} onChange={e => update('prepTime', parseInt(e.target.value, 10) || 0)} className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" />
+                  <label className="block text-sm font-medium text-primary mb-1">Prep (min)</label>
+                  <input type="number" min={0} value={form.prepTime} onChange={e => update('prepTime', parseInt(e.target.value, 10) || 0)} className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-espresso dark:text-cream mb-1">Cook (min)</label>
-                  <input type="number" min={0} value={form.cookTime} onChange={e => update('cookTime', parseInt(e.target.value, 10) || 0)} className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" />
+                  <label className="block text-sm font-medium text-primary mb-1">Cook (min)</label>
+                  <input type="number" min={0} value={form.cookTime} onChange={e => update('cookTime', parseInt(e.target.value, 10) || 0)} className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-espresso dark:text-cream mb-1">Servings</label>
-                  <input type="number" min={1} value={form.servings} onChange={e => update('servings', parseInt(e.target.value, 10) || 1)} className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" />
+                  <label className="block text-sm font-medium text-primary mb-1">Servings</label>
+                  <input type="number" min={1} value={form.servings} onChange={e => update('servings', parseInt(e.target.value, 10) || 1)} className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-espresso dark:text-cream mb-1">Calories</label>
-                  <input type="number" min={0} value={form.calories} onChange={e => update('calories', parseInt(e.target.value, 10) || 0)} className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" />
+                  <label className="block text-sm font-medium text-primary mb-1">Calories</label>
+                  <input type="number" min={0} value={form.calories} onChange={e => update('calories', parseInt(e.target.value, 10) || 0)} className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary" />
                 </div>
               </div>
             </div>
@@ -773,57 +750,57 @@ function RecipeForm({ recipe, onSave, onClose, categories, cuisines }) {
             <div className="space-y-6">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-sm font-medium text-espresso dark:text-cream">Ingredients *</label>
-                  <button type="button" onClick={addIngredient} className="text-sm text-saffron hover:underline">+ Add</button>
+                  <label className="text-sm font-medium text-primary">Ingredients *</label>
+                  <button type="button" onClick={addIngredient} className="text-sm text-gold hover:underline">+ Add</button>
                 </div>
                 {form.ingredients.map((ing, i) => (
                   <div key={i} className="flex gap-2 mb-2">
-                    <input value={ing} onChange={e => setIngredient(i, e.target.value)} className="flex-1 px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" placeholder="e.g. 200g flour" />
-                    <button type="button" onClick={() => removeIngredient(i)} className="p-2 text-red-600" aria-label="Remove"><Trash2 className="w-4 h-4" /></button>
+                    <input value={ing} onChange={e => setIngredient(i, e.target.value)} className="input-dark flex-1 px-3 py-2 rounded-lg border border-card bg-app text-primary placeholder:text-muted focus:border-gold/50 focus:shadow-input-focus" placeholder="e.g. 200g flour" />
+                    <button type="button" onClick={() => removeIngredient(i)} className="p-2 text-red-400 hover:text-red-300" aria-label="Remove"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))}
-                {errors.ingredients && <p className="text-red-600 text-sm">{errors.ingredients}</p>}
+                {errors.ingredients && <p className="text-red-400 text-sm">{errors.ingredients}</p>}
               </div>
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-sm font-medium text-espresso dark:text-cream">Steps *</label>
-                  <button type="button" onClick={addStep} className="text-sm text-saffron hover:underline">+ Add</button>
+                  <label className="text-sm font-medium text-primary">Steps *</label>
+                  <button type="button" onClick={addStep} className="text-sm text-gold hover:underline">+ Add</button>
                 </div>
                 {form.steps.map((s, i) => (
                   <div key={i} className="flex gap-2 mb-2">
-                    <span className="text-espresso/60 dark:text-cream/60 w-6">{i + 1}.</span>
-                    <input value={s} onChange={e => setStepContent(i, e.target.value)} className="flex-1 px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" placeholder="Step description" />
-                    <input type="number" min={0} value={form.stepTimes[i] ?? 0} onChange={e => setStepTime(i, e.target.value)} className="w-16 px-2 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" placeholder="min" title="Step time (min)" />
-                    <button type="button" onClick={() => removeStep(i)} className="p-2 text-red-600" aria-label="Remove step"><Trash2 className="w-4 h-4" /></button>
+                    <span className="text-muted w-6">{i + 1}.</span>
+                    <input value={s} onChange={e => setStepContent(i, e.target.value)} className="input-dark flex-1 px-3 py-2 rounded-lg border border-card bg-app text-primary placeholder:text-muted focus:border-gold/50 focus:shadow-input-focus" placeholder="Step description" />
+                    <input type="number" min={0} value={form.stepTimes[i] ?? 0} onChange={e => setStepTime(i, e.target.value)} className="input-dark w-16 px-2 py-2 rounded-lg border border-card bg-app text-primary" placeholder="min" title="Step time (min)" />
+                    <button type="button" onClick={() => removeStep(i)} className="p-2 text-red-400 hover:text-red-300" aria-label="Remove step"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))}
-                {errors.steps && <p className="text-red-600 text-sm">{errors.steps}</p>}
+                {errors.steps && <p className="text-red-400 text-sm">{errors.steps}</p>}
               </div>
             </div>
           )}
           {step === 3 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-espresso dark:text-cream mb-1">Tags (comma-separated)</label>
-                <input type="text" value={form.tags} onChange={e => update('tags', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" placeholder="vegan, quick, gluten-free" />
+                <label className="block text-sm font-medium text-primary mb-1">Tags (comma-separated)</label>
+                <input type="text" value={form.tags} onChange={e => update('tags', e.target.value)} className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary placeholder:text-muted focus:border-gold/50 focus:shadow-input-focus" placeholder="vegan, quick, gluten-free" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-espresso dark:text-cream mb-1">Notes</label>
-                <textarea value={form.notes} onChange={e => update('notes', e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" placeholder="Personal notes" />
+                <label className="block text-sm font-medium text-primary mb-1">Notes</label>
+                <textarea value={form.notes} onChange={e => update('notes', e.target.value)} rows={3} className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary placeholder:text-muted focus:border-gold/50 focus:shadow-input-focus" placeholder="Personal notes" />
               </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.is_favorite} onChange={e => update('is_favorite', e.target.checked)} className="rounded" />
-                <span className="text-espresso dark:text-cream">Favorite</span>
+              <label className="flex items-center gap-2 cursor-pointer text-primary">
+                <input type="checkbox" checked={form.is_favorite} onChange={e => update('is_favorite', e.target.checked)} className="rounded border-card bg-app text-gold focus:ring-gold/50" />
+                <span>Favorite</span>
               </label>
             </div>
           )}
         </div>
-        <div className="flex justify-between p-4 border-t border-espresso/10 dark:border-cream/10">
-          <button type="button" onClick={() => setStep(s => Math.max(0, s - 1))} className="px-4 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 text-espresso dark:text-cream">Back</button>
+        <div className="flex justify-between p-4 border-t border-card">
+          <button type="button" onClick={() => setStep(s => Math.max(0, s - 1))} className="px-4 py-2 rounded-lg border border-card bg-app text-primary hover:border-gold/50 transition-colors">Back</button>
           {step < 3 ? (
-            <button type="button" onClick={() => setStep(s => s + 1)} className="px-4 py-2 rounded-lg bg-saffron text-white">Next</button>
+            <button type="button" onClick={() => setStep(s => s + 1)} className="px-4 py-2 rounded-lg border border-gold/50 bg-gold/20 text-gold hover:shadow-card-hover transition-all">Next</button>
           ) : (
-            <button type="button" onClick={handleSubmit} className="px-4 py-2 rounded-lg bg-sage text-white">Save Recipe</button>
+            <button type="button" onClick={handleSubmit} className="px-4 py-2 rounded-lg border border-gold/50 bg-gold text-app font-medium hover:shadow-card-hover transition-all">Save Recipe</button>
           )}
         </div>
       </div>
@@ -853,12 +830,12 @@ function RecipeDetail({ recipe, recipes, onClose, onEdit, onCookingMode, onToggl
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-espresso/50 dark:bg-cream/20" onClick={onClose} role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true">
       <div className="min-h-screen flex flex-col items-center p-4 py-8" onClick={e => e.stopPropagation()}>
-        <div className="max-w-4xl w-full bg-cream dark:bg-espresso rounded-2xl shadow-xl overflow-hidden print-content">
+        <div className="max-w-4xl w-full bg-card rounded-2xl border border-card shadow-dock overflow-hidden print-content">
           <div className="relative aspect-[2/1] max-h-80">
             <img src={recipe.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800'} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-espresso/80 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
               <h1 className="font-display text-3xl md:text-4xl">{recipe.title}</h1>
               <p className="mt-2 opacity-90">{recipe.description}</p>
@@ -870,25 +847,25 @@ function RecipeDetail({ recipe, recipes, onClose, onEdit, onCookingMode, onToggl
               </div>
             </div>
             <div className="absolute top-4 right-4 flex gap-2">
-              <button type="button" onClick={() => onToggleFavorite(recipe.id)} className="p-2 rounded-full bg-white/90 dark:bg-espresso/90" aria-label="Favorite">
-                <Heart className={`w-5 h-5 ${recipe.is_favorite ? 'fill-terracotta text-terracotta' : ''}`} />
+              <button type="button" onClick={() => onToggleFavorite(recipe.id)} className="p-2 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white hover:bg-black/70" aria-label="Favorite">
+                <Heart className={`w-5 h-5 ${recipe.is_favorite ? 'fill-gold text-gold' : ''}`} />
               </button>
-              <button type="button" onClick={onEdit} className="p-2 rounded-full bg-white/90 dark:bg-espresso/90" aria-label="Edit"><Edit3 className="w-5 h-5" /></button>
-              <button type="button" onClick={handleShare} className="p-2 rounded-full bg-white/90 dark:bg-espresso/90" aria-label="Share"><Share2 className="w-5 h-5" /></button>
-              <button type="button" onClick={handlePrint} className="p-2 rounded-full bg-white/90 dark:bg-espresso/90 no-print" aria-label="Print"><Printer className="w-5 h-5" /></button>
-              {onExportJson && <button type="button" onClick={() => onExportJson(recipe)} className="p-2 rounded-full bg-white/90 dark:bg-espresso/90 no-print" aria-label="Export JSON">JSON</button>}
-              {onExportMarkdown && <button type="button" onClick={() => onExportMarkdown(recipe)} className="p-2 rounded-full bg-white/90 dark:bg-espresso/90 no-print" aria-label="Export Markdown">MD</button>}
-              <button type="button" onClick={onClose} className="p-2 rounded-full bg-white/90 dark:bg-espresso/90 no-print" aria-label="Close"><X className="w-5 h-5" /></button>
+              <button type="button" onClick={onEdit} className="p-2 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white hover:bg-black/70" aria-label="Edit"><Edit3 className="w-5 h-5" /></button>
+              <button type="button" onClick={handleShare} className="p-2 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white hover:bg-black/70" aria-label="Share"><Share2 className="w-5 h-5" /></button>
+              <button type="button" onClick={handlePrint} className="p-2 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white hover:bg-black/70 no-print" aria-label="Print"><Printer className="w-5 h-5" /></button>
+              {onExportJson && <button type="button" onClick={() => onExportJson(recipe)} className="p-2 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white hover:bg-black/70 no-print text-xs" aria-label="Export JSON">JSON</button>}
+              {onExportMarkdown && <button type="button" onClick={() => onExportMarkdown(recipe)} className="p-2 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white hover:bg-black/70 no-print text-xs" aria-label="Export Markdown">MD</button>}
+              <button type="button" onClick={onClose} className="p-2 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white hover:bg-black/70 no-print" aria-label="Close"><X className="w-5 h-5" /></button>
             </div>
           </div>
           <div className="p-6 md:p-8 grid md:grid-cols-3 gap-8">
             <div className="md:col-span-2 space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-display text-xl text-espresso dark:text-cream">Ingredients</h2>
+                  <h2 className="font-display text-xl text-primary section-heading border-0">Ingredients</h2>
                   <div className="flex items-center gap-2">
-                    <label className="text-sm text-espresso/70 dark:text-cream/70">Servings:</label>
-                    <select value={servings} onChange={e => setServings(Number(e.target.value))} className="px-2 py-1 rounded border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream">
+                    <label className="text-sm text-secondary">Servings:</label>
+                    <select value={servings} onChange={e => setServings(Number(e.target.value))} className="input-dark px-2 py-1 rounded border border-card bg-app text-primary">
                       {[1,2,3,4,6,8,10].map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
@@ -896,56 +873,56 @@ function RecipeDetail({ recipe, recipes, onClose, onEdit, onCookingMode, onToggl
                 <ul className="space-y-2">
                   {scaledIngredients.map((ing, i) => (
                     <li key={i} className="flex items-center gap-2">
-                      <button type="button" onClick={() => toggleIngredient(i)} className="shrink-0 w-5 h-5 rounded border border-espresso/30 dark:border-cream/30 flex items-center justify-center" aria-label={`Toggle ${ing}`}>
-                        {checkedIngredients[i] ? <Check className="w-3 h-3 text-sage" /> : null}
+                      <button type="button" onClick={() => toggleIngredient(i)} className="shrink-0 w-5 h-5 rounded border border-card flex items-center justify-center hover:border-gold/50" aria-label={`Toggle ${ing}`}>
+                        {checkedIngredients[i] ? <Check className="w-3 h-3 text-gold" /> : null}
                       </button>
-                      <span className={checkedIngredients[i] ? 'line-through text-espresso/60 dark:text-cream/60' : ''}>{ing}</span>
+                      <span className={checkedIngredients[i] ? 'line-through text-muted' : 'text-primary'}>{ing}</span>
                     </li>
                   ))}
                 </ul>
               </div>
               <div>
-                <h2 className="font-display text-xl text-espresso dark:text-cream mb-4">Steps</h2>
+                <h2 className="font-display text-xl text-primary mb-4 pb-2 border-b border-gold/40">Steps</h2>
                 <ol className="space-y-3">
                   {(recipe.steps || []).map((step, i) => (
                     <li key={i} className="flex gap-3">
-                      <span className="shrink-0 w-8 h-8 rounded-full bg-saffron/20 text-saffron flex items-center justify-center font-medium">{i + 1}</span>
-                      <span>{step}</span>
+                      <span className="shrink-0 w-8 h-8 rounded-full bg-gold/20 text-gold border border-gold/40 flex items-center justify-center font-medium">{i + 1}</span>
+                      <span className="text-primary">{step}</span>
                     </li>
                   ))}
                 </ol>
               </div>
               {recipe.notes && (
                 <div>
-                  <h2 className="font-display text-xl text-espresso dark:text-cream mb-2">Notes</h2>
-                  <p className="text-espresso/80 dark:text-cream/80">{recipe.notes}</p>
+                  <h2 className="font-display text-xl text-primary mb-2 pb-2 border-b border-gold/40">Notes</h2>
+                  <p className="text-secondary">{recipe.notes}</p>
                 </div>
               )}
             </div>
             <div className="space-y-6">
-              <div className="p-4 rounded-xl bg-espresso/5 dark:bg-cream/5">
-                <h3 className="font-display text-lg text-espresso dark:text-cream mb-2">Nutrition</h3>
-                <p className="text-espresso/80 dark:text-cream/80">{recipe.calories} cal per serving · {recipe.servings} servings</p>
+              <div className="p-4 rounded-xl bg-app border border-card">
+                <h3 className="font-display text-lg text-primary mb-2">Nutrition</h3>
+                <p className="text-secondary">{recipe.calories} cal per serving · {recipe.servings} servings</p>
               </div>
               <div>
-                <h3 className="font-display text-lg text-espresso dark:text-cream mb-2">Rate this recipe</h3>
+                <h3 className="font-display text-lg text-primary mb-2">Rate this recipe</h3>
                 <div className="flex gap-1">
                   {[1,2,3,4,5].map(star => (
                     <button key={star} type="button" onClick={() => { dispatchRecipes({ type: 'SET_RATING', payload: { id: recipe.id, rating: star } }); }} className="p-1" aria-label={`Rate ${star} stars`}>
-                      <Star className={`w-6 h-6 ${(recipe.rating || 0) >= star ? 'fill-saffron text-saffron' : 'text-espresso/30 dark:text-cream/30'}`} />
+                      <Star className={`w-6 h-6 ${(recipe.rating || 0) >= star ? 'fill-gold text-gold' : 'text-muted'}`} />
                     </button>
                   ))}
                 </div>
               </div>
-              <button type="button" onClick={onCookingMode} className="w-full py-3 rounded-xl bg-saffron text-white font-medium flex items-center justify-center gap-2">
+              <button type="button" onClick={onCookingMode} className="w-full py-3 rounded-xl border border-gold/50 bg-gold/20 text-gold font-medium flex items-center justify-center gap-2 hover:shadow-card-hover hover:bg-gold/30 transition-all">
                 <UtensilsCrossed className="w-5 h-5" /> Start Cooking Mode
               </button>
               {related.length > 0 && onSelectRelated && (
                 <div>
-                  <h3 className="font-display text-lg text-espresso dark:text-cream mb-2">Related</h3>
+                  <h3 className="font-display text-lg text-primary mb-2">Related</h3>
                   <div className="space-y-2">
                     {related.map(r => (
-                      <button key={r.id} type="button" onClick={() => onSelectRelated(r)} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-espresso/5 dark:hover:bg-cream/5 text-espresso dark:text-cream text-sm">
+                      <button key={r.id} type="button" onClick={() => onSelectRelated(r)} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 text-primary text-sm transition-colors">
                         {r.title}
                       </button>
                     ))}
@@ -994,28 +971,28 @@ function CookingMode({ recipe, onClose }) {
   const hasPrev = stepIndex > 0;
 
   return (
-    <div className="fixed inset-0 z-[60] bg-espresso dark:bg-espresso text-cream flex flex-col" role="dialog" aria-modal="true">
-      <div className="flex items-center justify-between p-4 border-b border-cream/10">
+    <div className="fixed inset-0 z-[60] bg-app text-primary flex flex-col" role="dialog" aria-modal="true">
+      <div className="flex items-center justify-between p-4 border-b border-card">
         <span className="font-display text-lg">{recipe.title} — Step {stepIndex + 1} of {totalSteps}</span>
-        <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-cream/10" aria-label="Exit cooking mode"><X className="w-6 h-6" /></button>
+        <button type="button" onClick={onClose} className="p-2 rounded-lg text-secondary hover:text-primary hover:bg-white/5" aria-label="Exit cooking mode"><X className="w-6 h-6" /></button>
       </div>
       <div className="flex-1 flex flex-col items-center justify-center p-8">
-        <p className="text-2xl md:text-4xl text-center max-w-2xl mb-8">{currentStep}</p>
+        <p className="text-2xl md:text-4xl text-center max-w-2xl mb-8 text-primary">{currentStep}</p>
         {secondsLeft !== null && secondsLeft > 0 && (
-          <div className="text-4xl font-mono mb-6">
+          <div className="text-4xl font-mono mb-6 text-gold">
             {Math.floor(secondsLeft / 60)}:{(secondsLeft % 60).toString().padStart(2, '0')}
           </div>
         )}
         <div className="flex gap-4">
-          <button type="button" onClick={() => setStepIndex(s => s - 1)} disabled={!hasPrev} className="px-6 py-3 rounded-xl bg-cream/10 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="button" onClick={() => setStepIndex(s => s - 1)} disabled={!hasPrev} className="px-6 py-3 rounded-xl border border-card bg-card text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:border-gold/50">
             Previous
           </button>
           {hasNext ? (
-            <button type="button" onClick={() => setStepIndex(s => s + 1)} className="px-6 py-3 rounded-xl bg-saffron text-espresso">
+            <button type="button" onClick={() => setStepIndex(s => s + 1)} className="px-6 py-3 rounded-xl border border-gold/50 bg-gold text-app font-medium hover:shadow-card-hover">
               Next Step
             </button>
           ) : (
-            <button type="button" onClick={onClose} className="px-6 py-3 rounded-xl bg-sage text-cream">
+            <button type="button" onClick={onClose} className="px-6 py-3 rounded-xl border border-gold/50 bg-gold text-app font-medium hover:shadow-card-hover">
               Done
             </button>
           )}
@@ -1075,28 +1052,28 @@ function MealPlanner({ mealPlan, setMealPlan, recipes, onSelectRecipe }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 className="font-display text-2xl text-espresso dark:text-cream">Weekly Meal Plan</h2>
+        <h2 className="font-display text-2xl text-primary section-heading">Weekly Meal Plan</h2>
         <div className="flex gap-2">
-          <button type="button" onClick={autoGenerate} className="px-4 py-2 rounded-lg bg-sage text-white text-sm">Auto-generate</button>
-          <button type="button" onClick={clearAll} className="px-4 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 text-espresso dark:text-cream text-sm">Clear all</button>
+          <button type="button" onClick={autoGenerate} className="px-4 py-2 rounded-lg border border-gold/50 bg-gold text-app text-sm font-medium hover:shadow-card-hover">Auto-generate</button>
+          <button type="button" onClick={clearAll} className="px-4 py-2 rounded-lg border border-card bg-card text-primary text-sm hover:border-card-hover">Clear all</button>
         </div>
       </div>
-      <div className="p-4 rounded-xl bg-sage/10 dark:bg-sage/20 text-espresso dark:text-cream">
-        <strong>Summary:</strong> {planned.length} recipes planned · ~{totalCal} cal total this week
+      <div className="p-4 rounded-xl bg-card border border-card text-secondary">
+        <strong className="text-primary">Summary:</strong> {planned.length} recipes planned · ~{totalCal} cal total this week
       </div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b border-espresso/10 dark:border-cream/10">
-              <th className="text-left py-3 px-2 text-espresso/70 dark:text-cream/70 font-medium">Day</th>
-              {mealSlots.map(slot => <th key={slot} className="text-left py-3 px-2 text-espresso/70 dark:text-cream/70 font-medium">{slot}</th>)}
+            <tr className="border-b border-card">
+              <th className="text-left py-3 px-2 text-secondary font-medium">Day</th>
+              {mealSlots.map(slot => <th key={slot} className="text-left py-3 px-2 text-secondary font-medium">{slot}</th>)}
               <th className="w-24"></th>
             </tr>
           </thead>
           <tbody>
             {days.map(day => (
-              <tr key={day} className="border-b border-espresso/5 dark:border-cream/5">
-                <td className="py-3 px-2 font-medium text-espresso dark:text-cream">{day}</td>
+              <tr key={day} className="border-b border-card">
+                <td className="py-3 px-2 font-medium text-primary">{day}</td>
                 {mealSlots.map(slot => {
                   const rid = mealPlan[day]?.[slot];
                   const rec = rid ? recipes.find(r => r.id === rid) : null;
@@ -1105,17 +1082,17 @@ function MealPlanner({ mealPlan, setMealPlan, recipes, onSelectRecipe }) {
                       <select
                         value={rid || ''}
                         onChange={e => setSlot(day, slot, e.target.value || null)}
-                        className="w-full max-w-[140px] text-sm px-2 py-1.5 rounded border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream"
+                        className="input-dark w-full max-w-[140px] text-sm px-2 py-1.5 rounded border border-card bg-app text-primary"
                       >
                         <option value="">—</option>
                         {recipes.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
                       </select>
-                      {rec && <p className="text-xs text-espresso/60 dark:text-cream/60 mt-0.5">{rec.prepTime + rec.cookTime} min</p>}
+                      {rec && <p className="text-xs text-muted mt-0.5">{rec.prepTime + rec.cookTime} min</p>}
                     </td>
                   );
                 })}
                 <td>
-                  <button type="button" onClick={() => clearDay(day)} className="text-xs text-red-600 dark:text-red-400">Clear</button>
+                  <button type="button" onClick={() => clearDay(day)} className="text-xs text-red-400 hover:text-red-300">Clear</button>
                 </td>
               </tr>
             ))}
@@ -1201,13 +1178,13 @@ function GroceryList({ mealPlan, recipes, groceryItems, setGroceryItems, addToas
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 className="font-display text-2xl text-espresso dark:text-cream">Grocery List</h2>
-        <button type="button" onClick={exportList} className="px-4 py-2 rounded-lg bg-sage text-white text-sm">Copy list</button>
+        <h2 className="font-display text-2xl text-primary section-heading">Grocery List</h2>
+        <button type="button" onClick={exportList} className="px-4 py-2 rounded-lg border border-gold/50 bg-gold text-app text-sm font-medium hover:shadow-card-hover">Copy list</button>
       </div>
-      <p className="text-espresso/70 dark:text-cream/70 text-sm">Generated from your current meal plan. Add custom items below.</p>
+      <p className="text-secondary text-sm">Generated from your current meal plan. Add custom items below.</p>
       <div className="flex gap-2">
-        <input type="text" value={customItem} onChange={e => setCustomItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCustom()} placeholder="Add item..." className="flex-1 px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" />
-        <button type="button" onClick={addCustom} className="px-4 py-2 rounded-lg bg-saffron text-white">Add</button>
+        <input type="text" value={customItem} onChange={e => setCustomItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCustom()} placeholder="Add item..." className="input-dark flex-1 px-3 py-2 rounded-lg border border-card bg-app text-primary placeholder:text-muted focus:border-gold/50 focus:shadow-input-focus" />
+        <button type="button" onClick={addCustom} className="px-4 py-2 rounded-lg border border-gold/50 bg-gold text-app font-medium hover:shadow-card-hover">Add</button>
       </div>
       <div className="space-y-4">
         {GROCERY_CATEGORIES.map(cat => {
@@ -1215,14 +1192,14 @@ function GroceryList({ mealPlan, recipes, groceryItems, setGroceryItems, addToas
           if (!items.length) return null;
           return (
             <div key={cat}>
-              <h3 className="font-medium text-espresso dark:text-cream mb-2">{cat}</h3>
+              <h3 className="font-medium text-primary mb-2">{cat}</h3>
               <ul className="space-y-1">
                 {items.map((it, idx) => (
                   <li key={it.id || it.planKey || idx} className="flex items-center gap-2">
-                    <button type="button" onClick={() => toggleItem(it)} className="shrink-0 w-5 h-5 rounded border flex items-center justify-center" aria-label={it.checked ? 'Mark unchecked' : 'Mark purchased'}>
-                      {it.checked ? <Check className="w-3 h-3 text-sage" /> : null}
+                    <button type="button" onClick={() => toggleItem(it)} className="shrink-0 w-5 h-5 rounded border border-card flex items-center justify-center hover:border-gold/50" aria-label={it.checked ? 'Mark unchecked' : 'Mark purchased'}>
+                      {it.checked ? <Check className="w-3 h-3 text-gold" /> : null}
                     </button>
-                    <span className={it.checked ? 'line-through text-espresso/60 dark:text-cream/60' : ''}>{it.text}</span>
+                    <span className={it.checked ? 'line-through text-muted' : 'text-primary'}>{it.text}</span>
                     {it.id && groceryItems.some(x => x.id === it.id) && (
                       <button type="button" onClick={() => removeCustom(it.id)} className="ml-auto text-red-600 text-sm">Remove</button>
                     )}
@@ -1258,31 +1235,32 @@ function Collections({ collections, recipes, dispatchCollections, onSelectRecipe
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-4">
-        <h2 className="font-display text-2xl text-espresso dark:text-cream">Collections</h2>
+        <h2 className="font-display text-2xl text-primary section-heading">Collections</h2>
         <div className="flex gap-2">
-          <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Collection name" className="px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream w-48" />
-          <button type="button" onClick={addCollection} className="px-4 py-2 rounded-lg bg-sage text-white">New</button>
+          <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Collection name" className="input-dark px-3 py-2 rounded-lg border border-card bg-app text-primary placeholder:text-muted w-48 focus:border-gold/50 focus:shadow-input-focus" />
+          <button type="button" onClick={addCollection} className="px-4 py-2 rounded-lg border border-gold/50 bg-gold text-app font-medium hover:shadow-card-hover">New</button>
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {collections.map(c => (
-          <div key={c.id} className="bg-white dark:bg-espresso/80 rounded-xl overflow-hidden border border-espresso/5 dark:border-cream/5">
-            <div className="aspect-video relative bg-espresso/10 dark:bg-cream/10">
+          <div key={c.id} className="bg-card rounded-xl overflow-hidden border border-card hover:border-card-hover hover:shadow-card-hover transition-all duration-300">
+            <div className="aspect-video relative bg-app">
               <img src={getCoverImage(c) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400'} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
               <div className="absolute bottom-2 left-2 right-2 text-white font-display font-semibold drop-shadow">{c.name}</div>
             </div>
             <div className="p-3 flex items-center justify-between">
-              <span className="text-sm text-espresso/70 dark:text-cream/70">{c.recipeIds.length} recipes</span>
-              <button type="button" onClick={() => deleteCollection(c.id)} className="text-red-600 text-sm">Delete</button>
+              <span className="text-sm text-secondary">{c.recipeIds.length} recipes</span>
+              <button type="button" onClick={() => deleteCollection(c.id)} className="text-red-400 text-sm hover:text-red-300">Delete</button>
             </div>
-            <div className="p-3 border-t border-espresso/5 dark:border-cream/5">
-              <button type="button" onClick={() => onSelectRecipe({ collectionId: c.id })} className="text-sm text-saffron hover:underline">View recipes</button>
+            <div className="p-3 border-t border-card">
+              <button type="button" onClick={() => onSelectRecipe({ collectionId: c.id })} className="text-sm text-gold hover:underline">View recipes</button>
             </div>
           </div>
         ))}
       </div>
       {collections.length === 0 && (
-        <div className="text-center py-12 text-espresso/60 dark:text-cream/60">
+        <div className="text-center py-12 text-muted">
           <FolderOpen className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p>No collections yet. Create one to group recipes.</p>
         </div>
@@ -1296,7 +1274,7 @@ function SearchBar({ value, onChange, recentSearches, onRecentClick }) {
   const [focused, setFocused] = useState(false);
   return (
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-espresso/50 dark:text-cream/50" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
       <input
         type="search"
         value={value}
@@ -1304,14 +1282,14 @@ function SearchBar({ value, onChange, recentSearches, onRecentClick }) {
         onFocus={() => setFocused(true)}
         onBlur={() => setTimeout(() => setFocused(false), 200)}
         placeholder="Search recipes..."
-        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream placeholder-espresso/50"
+        className="input-dark w-full pl-10 pr-4 py-2.5 rounded-xl border border-card bg-app text-primary placeholder:text-muted focus:border-gold/50 focus:shadow-input-focus transition-all duration-300"
         aria-label="Search recipes"
       />
       {focused && recentSearches.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 py-2 bg-white dark:bg-espresso rounded-xl shadow-lg border border-espresso/10 dark:border-cream/10 z-10">
-          <p className="px-3 text-xs text-espresso/60 dark:text-cream/60 mb-1">Recent</p>
+        <div className="absolute top-full left-0 right-0 mt-1 py-2 bg-card rounded-xl shadow-dock border border-card z-10">
+          <p className="px-3 text-xs text-muted mb-1">Recent</p>
           {recentSearches.slice(0, 5).map((s, i) => (
-            <button key={i} type="button" onClick={() => { onRecentClick(s); setFocused(false); }} className="w-full text-left px-3 py-1.5 hover:bg-espresso/5 dark:hover:bg-cream/5 text-sm">
+            <button key={i} type="button" onClick={() => { onRecentClick(s); setFocused(false); }} className="w-full text-left px-3 py-1.5 hover:bg-white/5 text-primary text-sm transition-colors">
               {s}
             </button>
           ))}
@@ -1325,20 +1303,20 @@ function FilterPanel({ filters, setFilters, categories, cuisines, clearAll }) {
   const hasActive = Object.values(filters).some(v => v !== undefined && v !== '' && (Array.isArray(v) ? v.length : true));
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Filter className="w-4 h-4 text-espresso/60 dark:text-cream/60" />
-      <select value={filters.category || ''} onChange={e => setFilters(f => ({ ...f, category: e.target.value || undefined }))} className="px-2 py-1.5 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-sm text-espresso dark:text-cream">
+      <Filter className="w-4 h-4 text-muted" />
+      <select value={filters.category || ''} onChange={e => setFilters(f => ({ ...f, category: e.target.value || undefined }))} className="input-dark px-2 py-1.5 rounded-lg border border-card bg-app text-sm text-primary">
         <option value="">Category</option>
         {categories.map(c => <option key={c} value={c}>{c}</option>)}
       </select>
-      <select value={filters.cuisine || ''} onChange={e => setFilters(f => ({ ...f, cuisine: e.target.value || undefined }))} className="px-2 py-1.5 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-sm text-espresso dark:text-cream">
+      <select value={filters.cuisine || ''} onChange={e => setFilters(f => ({ ...f, cuisine: e.target.value || undefined }))} className="input-dark px-2 py-1.5 rounded-lg border border-card bg-app text-sm text-primary">
         <option value="">Cuisine</option>
         {cuisines.map(c => <option key={c} value={c}>{c}</option>)}
       </select>
-      <select value={filters.difficulty || ''} onChange={e => setFilters(f => ({ ...f, difficulty: e.target.value || undefined }))} className="px-2 py-1.5 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-sm text-espresso dark:text-cream">
+      <select value={filters.difficulty || ''} onChange={e => setFilters(f => ({ ...f, difficulty: e.target.value || undefined }))} className="input-dark px-2 py-1.5 rounded-lg border border-card bg-app text-sm text-primary">
         <option value="">Difficulty</option>
         {['Easy', 'Medium', 'Hard'].map(d => <option key={d} value={d}>{d}</option>)}
       </select>
-      <select value={filters.sort || 'newest'} onChange={e => setFilters(f => ({ ...f, sort: e.target.value }))} className="px-2 py-1.5 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-sm text-espresso dark:text-cream">
+      <select value={filters.sort || 'newest'} onChange={e => setFilters(f => ({ ...f, sort: e.target.value }))} className="input-dark px-2 py-1.5 rounded-lg border border-card bg-app text-sm text-primary">
         <option value="newest">Newest</option>
         <option value="oldest">Oldest</option>
         <option value="rating">Rating</option>
@@ -1346,12 +1324,12 @@ function FilterPanel({ filters, setFilters, categories, cuisines, clearAll }) {
         <option value="name">Name A–Z</option>
         <option value="calories">Calories</option>
       </select>
-      <label className="flex items-center gap-1.5 text-sm text-espresso dark:text-cream cursor-pointer">
-        <input type="checkbox" checked={!!filters.favoritesOnly} onChange={e => setFilters(f => ({ ...f, favoritesOnly: e.target.checked }))} className="rounded" />
+      <label className="flex items-center gap-1.5 text-sm text-primary cursor-pointer">
+        <input type="checkbox" checked={!!filters.favoritesOnly} onChange={e => setFilters(f => ({ ...f, favoritesOnly: e.target.checked }))} className="rounded border-card bg-app text-gold" />
         Favorites
       </label>
       {hasActive && (
-        <button type="button" onClick={clearAll} className="text-sm text-saffron hover:underline">Clear all</button>
+        <button type="button" onClick={clearAll} className="text-sm text-gold hover:underline">Clear all</button>
       )}
     </div>
   );
@@ -1372,61 +1350,61 @@ function Dashboard({ recipes, collections, mealPlan, onSelectRecipe, onSetView }
   return (
     <div className="space-y-8">
       {featured && (
-        <section className="relative rounded-2xl overflow-hidden aspect-[2/1] max-h-80 bg-espresso/10 dark:bg-cream/10">
+        <section className="relative rounded-2xl overflow-hidden aspect-[2/1] max-h-80 bg-app border border-card">
           <img src={featured.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200'} alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-espresso/90 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-            <p className="text-sm uppercase tracking-wider opacity-90">Recipe of the day</p>
+            <p className="text-sm uppercase tracking-wider text-gold">Recipe of the day</p>
             <h2 className="font-display text-3xl md:text-4xl mt-1">{featured.title}</h2>
             <p className="mt-2 opacity-90 max-w-xl">{featured.description}</p>
-            <button type="button" onClick={() => onSelectRecipe(featured)} className="mt-4 px-5 py-2.5 rounded-xl bg-saffron text-espresso font-medium">
+            <button type="button" onClick={() => onSelectRecipe(featured)} className="mt-4 px-5 py-2.5 rounded-xl border border-gold/50 bg-gold text-app font-medium hover:shadow-card-hover transition-all">
               View recipe
             </button>
           </div>
         </section>
       )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <button type="button" onClick={() => onSetView('recipes')} className="p-4 rounded-xl bg-white dark:bg-espresso/80 border border-espresso/5 dark:border-cream/5 text-left hover:shadow-md transition-shadow">
-          <BookOpen className="w-8 h-8 text-sage mb-2" />
-          <p className="font-display text-2xl text-espresso dark:text-cream">{recipes.length}</p>
-          <p className="text-sm text-espresso/70 dark:text-cream/70">Recipes</p>
+        <button type="button" onClick={() => onSetView('recipes')} className="p-4 rounded-xl bg-card border border-card text-left hover:border-card-hover hover:shadow-card-hover transition-all duration-300">
+          <BookOpen className="w-8 h-8 text-gold mb-2" />
+          <p className="font-display text-2xl text-primary">{recipes.length}</p>
+          <p className="text-sm text-secondary">Recipes</p>
         </button>
-        <button type="button" onClick={() => onSetView('recipes')} className="p-4 rounded-xl bg-white dark:bg-espresso/80 border border-espresso/5 dark:border-cream/5 text-left hover:shadow-md transition-shadow">
-          <Heart className="w-8 h-8 text-terracotta mb-2" />
-          <p className="font-display text-2xl text-espresso dark:text-cream">{favorites.length}</p>
-          <p className="text-sm text-espresso/70 dark:text-cream/70">Favorites</p>
+        <button type="button" onClick={() => onSetView('recipes')} className="p-4 rounded-xl bg-card border border-card text-left hover:border-card-hover hover:shadow-card-hover transition-all duration-300">
+          <Heart className="w-8 h-8 text-gold mb-2" />
+          <p className="font-display text-2xl text-primary">{favorites.length}</p>
+          <p className="text-sm text-secondary">Favorites</p>
         </button>
-        <button type="button" onClick={() => onSetView('mealplanner')} className="p-4 rounded-xl bg-white dark:bg-espresso/80 border border-espresso/5 dark:border-cream/5 text-left hover:shadow-md transition-shadow">
-          <Calendar className="w-8 h-8 text-saffron mb-2" />
-          <p className="font-display text-2xl text-espresso dark:text-cream">{plannedCount}</p>
-          <p className="text-sm text-espresso/70 dark:text-cream/70">Planned this week</p>
+        <button type="button" onClick={() => onSetView('mealplanner')} className="p-4 rounded-xl bg-card border border-card text-left hover:border-card-hover hover:shadow-card-hover transition-all duration-300">
+          <Calendar className="w-8 h-8 text-gold mb-2" />
+          <p className="font-display text-2xl text-primary">{plannedCount}</p>
+          <p className="text-sm text-secondary">Planned this week</p>
         </button>
-        <button type="button" onClick={() => onSetView('collections')} className="p-4 rounded-xl bg-white dark:bg-espresso/80 border border-espresso/5 dark:border-cream/5 text-left hover:shadow-md transition-shadow">
-          <FolderOpen className="w-8 h-8 text-sage mb-2" />
-          <p className="font-display text-2xl text-espresso dark:text-cream">{collections.length}</p>
-          <p className="text-sm text-espresso/70 dark:text-cream/70">Collections</p>
+        <button type="button" onClick={() => onSetView('collections')} className="p-4 rounded-xl bg-card border border-card text-left hover:border-card-hover hover:shadow-card-hover transition-all duration-300">
+          <FolderOpen className="w-8 h-8 text-gold mb-2" />
+          <p className="font-display text-2xl text-primary">{collections.length}</p>
+          <p className="text-sm text-secondary">Collections</p>
         </button>
       </div>
       <div className="grid md:grid-cols-2 gap-8">
         <section>
-          <h3 className="font-display text-xl text-espresso dark:text-cream mb-4">Recently added</h3>
+          <h3 className="font-display text-xl text-primary mb-4 pb-2 border-b border-gold/40">Recently added</h3>
           <div className="flex gap-3 overflow-x-auto pb-2">
             {recent.map(r => (
-              <button key={r.id} type="button" onClick={() => onSelectRecipe(r)} className="shrink-0 w-40 rounded-xl overflow-hidden border border-espresso/10 dark:border-cream/10 hover:shadow-md transition-shadow">
+              <button key={r.id} type="button" onClick={() => onSelectRecipe(r)} className="shrink-0 w-40 rounded-xl overflow-hidden border border-card bg-card hover:border-card-hover hover:shadow-card-hover transition-all duration-300">
                 <img src={r.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400'} alt="" className="aspect-square object-cover" />
-                <p className="p-2 text-sm font-medium text-espresso dark:text-cream truncate">{r.title}</p>
+                <p className="p-2 text-sm font-medium text-primary truncate">{r.title}</p>
               </button>
             ))}
           </div>
         </section>
         <section>
-          <h3 className="font-display text-xl text-espresso dark:text-cream mb-4">Top rated</h3>
+          <h3 className="font-display text-xl text-primary mb-4 pb-2 border-b border-gold/40">Top rated</h3>
           <div className="flex gap-3 overflow-x-auto pb-2">
             {topRated.map(r => (
-              <button key={r.id} type="button" onClick={() => onSelectRecipe(r)} className="shrink-0 w-40 rounded-xl overflow-hidden border border-espresso/10 dark:border-cream/10 hover:shadow-md transition-shadow">
+              <button key={r.id} type="button" onClick={() => onSelectRecipe(r)} className="shrink-0 w-40 rounded-xl overflow-hidden border border-card bg-card hover:border-card-hover hover:shadow-card-hover transition-all duration-300">
                 <img src={r.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400'} alt="" className="aspect-square object-cover" />
-                <p className="p-2 text-sm font-medium text-espresso dark:text-cream truncate flex items-center gap-1">
-                  <Star className="w-4 h-4 fill-saffron text-saffron" /> {r.rating} {r.title}
+                <p className="p-2 text-sm font-medium text-primary truncate flex items-center gap-1">
+                  <Star className="w-4 h-4 fill-gold text-gold" /> {r.rating} {r.title}
                 </p>
               </button>
             ))}
@@ -1434,10 +1412,10 @@ function Dashboard({ recipes, collections, mealPlan, onSelectRecipe, onSetView }
         </section>
       </div>
       <section>
-        <h3 className="font-display text-xl text-espresso dark:text-cream mb-4">Categories</h3>
+        <h3 className="font-display text-xl text-primary mb-4 pb-2 border-b border-gold/40">Categories</h3>
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map(cat => (
-            <button key={cat} type="button" onClick={() => onSetView('recipes')} className="px-4 py-2 rounded-full bg-sage/20 text-sage dark:bg-sage/40 hover:bg-sage/30 dark:hover:bg-sage/50 transition-colors">
+            <button key={cat} type="button" onClick={() => onSetView('recipes')} className="px-4 py-2 rounded-full bg-gold/15 text-gold border border-gold/30 hover:bg-gold/25 transition-colors">
               {cat}
             </button>
           ))}
@@ -1451,46 +1429,46 @@ function Dashboard({ recipes, collections, mealPlan, onSelectRecipe, onSetView }
 function SettingsPanel({ settings, setSettings, categories, cuisines, setCategories, setCuisines, addToast, onExportAll, onImportJson }) {
   return (
     <div className="max-w-xl space-y-8">
-      <h2 className="font-display text-2xl text-espresso dark:text-cream">Settings</h2>
+      <h2 className="font-display text-2xl text-primary section-heading">Settings</h2>
       <section>
-        <h3 className="font-medium text-espresso dark:text-cream mb-3">Appearance</h3>
+        <h3 className="font-medium text-primary mb-3">Appearance</h3>
         <label className="flex items-center gap-3 cursor-pointer">
-          <span className="text-espresso dark:text-cream">Dark mode</span>
-          <button type="button" role="switch" aria-checked={settings.darkMode} onClick={() => { const next = !settings.darkMode; setSettings(s => ({ ...s, darkMode: next })); document.documentElement.classList.toggle('dark', next); addToast('Theme updated', 'success'); }} className={`relative w-12 h-6 rounded-full ${settings.darkMode ? 'bg-saffron' : 'bg-espresso/20 dark:bg-cream/20'}`}>
-            <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${settings.darkMode ? 'left-7' : 'left-1'}`} />
+          <span className="text-primary">Dark mode</span>
+          <button type="button" role="switch" aria-checked={settings.darkMode} onClick={() => { const next = !settings.darkMode; setSettings(s => ({ ...s, darkMode: next })); document.documentElement.classList.toggle('dark', next); addToast('Theme updated', 'success'); }} className={`relative w-12 h-6 rounded-full transition-colors ${settings.darkMode ? 'bg-gold' : 'bg-white/10'}`}>
+            <span className={`absolute top-1 w-4 h-4 rounded-full bg-primary transition-transform duration-300 ${settings.darkMode ? 'left-7' : 'left-1'}`} />
           </button>
         </label>
       </section>
       <section>
-        <h3 className="font-medium text-espresso dark:text-cream mb-3">Defaults</h3>
-        <label className="block text-sm text-espresso/70 dark:text-cream/70 mb-1">Default servings</label>
-        <input type="number" min={1} value={settings.defaultServings} onChange={e => setSettings(s => ({ ...s, defaultServings: parseInt(e.target.value, 10) || 4 }))} className="w-24 px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream" />
+        <h3 className="font-medium text-primary mb-3">Defaults</h3>
+        <label className="block text-sm text-secondary mb-1">Default servings</label>
+        <input type="number" min={1} value={settings.defaultServings} onChange={e => setSettings(s => ({ ...s, defaultServings: parseInt(e.target.value, 10) || 4 }))} className="input-dark w-24 px-3 py-2 rounded-lg border border-card bg-app text-primary focus:border-gold/50 focus:shadow-input-focus" />
       </section>
       <section>
-        <h3 className="font-medium text-espresso dark:text-cream mb-3">View</h3>
+        <h3 className="font-medium text-primary mb-3">View</h3>
         <div className="flex gap-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="view" checked={settings.viewMode === 'grid'} onChange={() => setSettings(s => ({ ...s, viewMode: 'grid' }))} />
+          <label className="flex items-center gap-2 cursor-pointer text-primary">
+            <input type="radio" name="view" checked={settings.viewMode === 'grid'} onChange={() => setSettings(s => ({ ...s, viewMode: 'grid' }))} className="text-gold" />
             <LayoutGrid className="w-4 h-4" /> Grid
           </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="view" checked={settings.viewMode === 'list'} onChange={() => setSettings(s => ({ ...s, viewMode: 'list' }))} />
+          <label className="flex items-center gap-2 cursor-pointer text-primary">
+            <input type="radio" name="view" checked={settings.viewMode === 'list'} onChange={() => setSettings(s => ({ ...s, viewMode: 'list' }))} className="text-gold" />
             <List className="w-4 h-4" /> List
           </label>
         </div>
       </section>
       <section>
-        <h3 className="font-medium text-espresso dark:text-cream mb-3">Import / Export</h3>
+        <h3 className="font-medium text-primary mb-3">Import / Export</h3>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={onExportAll} className="px-4 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 text-espresso dark:text-cream text-sm">Export all (JSON)</button>
-          <label className="px-4 py-2 rounded-lg bg-sage text-white text-sm cursor-pointer">
+          <button type="button" onClick={onExportAll} className="px-4 py-2 rounded-lg border border-card bg-card text-primary text-sm hover:border-gold/50 transition-colors">Export all (JSON)</button>
+          <label className="px-4 py-2 rounded-lg border border-gold/50 bg-gold text-app text-sm font-medium cursor-pointer hover:shadow-card-hover">
             Import JSON
             <input type="file" accept=".json,application/json" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) f.text().then(onImportJson); e.target.value = ''; }} />
           </label>
           <div className="w-full mt-2">
-            <p className="text-xs text-espresso/60 dark:text-cream/60 mb-1">Or paste JSON below:</p>
-            <textarea id="import-json-paste" rows={3} placeholder='[{"title":"...", ...}]' className="w-full px-3 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 bg-white dark:bg-espresso/50 text-espresso dark:text-cream text-sm font-mono" />
-            <button type="button" onClick={() => { const el = document.getElementById('import-json-paste'); if (el?.value) onImportJson(el.value); }} className="mt-1 px-3 py-1.5 rounded-lg bg-saffron/20 text-saffron text-sm">Import from paste</button>
+            <p className="text-xs text-muted mb-1">Or paste JSON below:</p>
+            <textarea id="import-json-paste" rows={3} placeholder='[{"title":"...", ...}]' className="input-dark w-full px-3 py-2 rounded-lg border border-card bg-app text-primary text-sm font-mono placeholder:text-muted focus:border-gold/50 focus:shadow-input-focus" />
+            <button type="button" onClick={() => { const el = document.getElementById('import-json-paste'); if (el?.value) onImportJson(el.value); }} className="mt-1 px-3 py-1.5 rounded-lg bg-gold/20 text-gold text-sm border border-gold/40 hover:bg-gold/30">Import from paste</button>
           </div>
         </div>
       </section>
@@ -1502,13 +1480,13 @@ function SettingsPanel({ settings, setSettings, categories, cuisines, setCategor
 function ConfirmDialog({ open, title, message, onConfirm, onCancel }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-espresso/50 dark:bg-cream/20" role="alertdialog" aria-modal="true">
-      <div className="bg-cream dark:bg-espresso rounded-xl shadow-xl max-w-sm w-full p-6 animate-slide-up">
-        <h3 className="font-display text-lg text-espresso dark:text-cream">{title}</h3>
-        <p className="mt-2 text-espresso/80 dark:text-cream/80 text-sm">{message}</p>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" role="alertdialog" aria-modal="true">
+      <div className="bg-card rounded-xl border border-card shadow-dock max-w-sm w-full p-6 animate-slide-up">
+        <h3 className="font-display text-lg text-primary">{title}</h3>
+        <p className="mt-2 text-secondary text-sm">{message}</p>
         <div className="flex gap-2 mt-6 justify-end">
-          <button type="button" onClick={onCancel} className="px-4 py-2 rounded-lg border border-espresso/20 dark:border-cream/20 text-espresso dark:text-cream">Cancel</button>
-          <button type="button" onClick={onConfirm} className="px-4 py-2 rounded-lg bg-red-600 text-white">Delete</button>
+          <button type="button" onClick={onCancel} className="px-4 py-2 rounded-lg border border-card bg-app text-primary hover:border-gold/50">Cancel</button>
+          <button type="button" onClick={onConfirm} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500">Delete</button>
         </div>
       </div>
     </div>
@@ -1540,7 +1518,6 @@ export default function App() {
   const [recentSearches, setRecentSearches] = useState([]);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [collectionViewId, setCollectionViewId] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const searchInputRef = useRef(null);
 
   const addToast = useCallback((message, type = 'success') => {
@@ -1680,36 +1657,34 @@ export default function App() {
   }, [addToast]);
 
   return (
-    <div className="min-h-screen bg-cream dark:bg-espresso text-espresso dark:text-cream">
-      <div className="flex">
-        <Sidebar currentView={view} setView={v => { setView(v); if (v !== 'collections') setCollectionViewId(null); }} collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} isDark={settings.darkMode} />
-        <main className="flex-1 min-h-screen pb-20 md:pb-0">
-          <header className="sticky top-0 z-40 bg-cream/95 dark:bg-espresso/95 backdrop-blur border-b border-espresso/10 dark:border-cream/10 no-print">
-            <div className="flex flex-col md:flex-row md:items-center gap-4 p-4">
-              <div className="flex-1 flex gap-2">
-                <div className="flex-1" ref={searchInputRef}>
-                  <SearchBar value={searchQuery} onChange={v => { setSearchQuery(v); addToRecentSearch(v); }} recentSearches={recentSearches} onRecentClick={s => setSearchQuery(s)} />
-                </div>
+    <div className="min-h-screen bg-app text-primary transition-[background-color] duration-view ease-out">
+      <main className="min-h-screen pb-24 md:pb-28">
+        <header className="sticky top-0 z-40 border-b border-card backdrop-blur-xl no-print" style={{ background: 'rgba(12,12,12,0.85)' }}>
+          <div className="flex flex-col md:flex-row md:items-center gap-4 p-4 md:p-5">
+            <div className="flex-1 flex gap-2">
+              <div className="flex-1" ref={searchInputRef}>
+                <SearchBar value={searchQuery} onChange={v => { setSearchQuery(v); addToRecentSearch(v); }} recentSearches={recentSearches} onRecentClick={s => setSearchQuery(s)} />
               </div>
-              {(view === 'recipes' || collectionViewId) && (
-                <FilterPanel filters={filters} setFilters={setFilters} categories={categories} cuisines={cuisines} clearAll={() => setFilters({ sort: 'newest' })} />
-              )}
-              {view === 'recipes' && (
-                <button type="button" onClick={() => setFormRecipe({})} className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-saffron text-espresso font-medium">
-                  <Plus className="w-5 h-5" /> Add recipe
-                </button>
-              )}
             </div>
-          </header>
-          <div className="p-4 md:p-6 lg:p-8">
+            {(view === 'recipes' || collectionViewId) && (
+              <FilterPanel filters={filters} setFilters={setFilters} categories={categories} cuisines={cuisines} clearAll={() => setFilters({ sort: 'newest' })} />
+            )}
+            {view === 'recipes' && (
+              <button type="button" onClick={() => setFormRecipe({})} className="btn-primary shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gold/50 bg-card text-primary font-medium hover:shadow-card-hover hover:border-gold/70 transition-all duration-300">
+                <Plus className="w-5 h-5 text-gold" /> Add recipe
+              </button>
+            )}
+          </div>
+        </header>
+        <div className="p-4 md:p-6 lg:p-8 animate-fade-in">
             {view === 'dashboard' && <Dashboard recipes={recipes} collections={collections} mealPlan={mealPlan} onSelectRecipe={r => setSelectedRecipe(typeof r === 'object' && r?.id ? r : null)} onSetView={setView} />}
             {view === 'recipes' && (
               <>
                 {collectionViewId && (
                   <div className="flex items-center gap-2 mb-4">
-                    <button type="button" onClick={() => setCollectionViewId(null)} className="text-saffron hover:underline">← All recipes</button>
-                    <span className="text-espresso/60 dark:text-cream/60">|</span>
-                    <span className="font-medium">{collections.find(c => c.id === collectionViewId)?.name}</span>
+                    <button type="button" onClick={() => setCollectionViewId(null)} className="text-gold hover:underline">← All recipes</button>
+                    <span className="text-muted">|</span>
+                    <span className="font-medium text-primary">{collections.find(c => c.id === collectionViewId)?.name}</span>
                   </div>
                 )}
                 <RecipeGrid
@@ -1738,10 +1713,9 @@ export default function App() {
               />
             )}
             {view === 'settings' && <SettingsPanel settings={settings} setSettings={setSettings} categories={categories} cuisines={cuisines} setCategories={() => {}} setCuisines={() => {}} addToast={addToast} onExportAll={exportAllJson} onImportJson={importJson} />}
-          </div>
-        </main>
-      </div>
-      <BottomNav currentView={view} setView={v => { setView(v); if (v !== 'collections') setCollectionViewId(null); }} />
+        </div>
+      </main>
+      <Dock currentView={view} setView={v => { setView(v); if (v !== 'collections') setCollectionViewId(null); }} />
 
       {selectedRecipe && (
         <RecipeDetail
